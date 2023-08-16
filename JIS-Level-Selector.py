@@ -1,5 +1,6 @@
 import os
 import shutil
+import string
 
 # Constants
 EXCLUDED_FILES = ["worlds.yaml"]
@@ -88,14 +89,14 @@ def show_level_list(ld):
 def queue_level_for_playing(ld):
     """Replace custom.yaml with user's selected level."""
     show_level_list(ld)
-    print("Note: Some levels from Jelly is Sticky’s original developers may not work.")
+    print("Note: Levels from Jelly is Sticky’s original developers may not work.")
     yll = fetch_yll(ld)
     while True:
         try:
             choice = int(input("Input the number of a level from the list above: "))
             if 0 <= choice < len(yll):
                 if yll[choice] == "custom.yaml":
-                    print("That level is already queued. Please make another choice:")
+                    print("That level is already queued. Please make another choice.")
                     continue
                 break
             else:
@@ -121,13 +122,19 @@ def queue_level_for_playing(ld):
         filename = rename_to_valid_filename(levelname) + ".yaml"
         new_filename = rename_to_windows_duplicate_format(ld, filename)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
+        
+    # Delete custom.yaml_backup if it exists
+    unneeded_backup_filename = os.path.join(ld, 'custom.yaml_backup')
+    if os.path.exists(unneeded_backup_filename):
+        os.remove(unneeded_backup_filename)
 
     # Copying the new custom.yaml and updating the PFF
     shutil.copy(os.path.join(ld, yll[choice]), backup_path)
     with open(os.path.join(ld, PFF_NAME), 'w') as f:
         f.write(yll[choice])
     os.rename(os.path.join(ld, yll[choice]), os.path.join(ld, "custom.yaml"))
-    print(f"~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
+    print(f"\n~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
+    print("Remember to exit this program before opening Jelly is Sticky.")
 
 def queue_blank_level(ld):
     """Create a blank level in custom.yaml."""
@@ -138,7 +145,8 @@ def queue_blank_level(ld):
     with open(os.path.join(ld, "custom.yaml"), 'w') as f:
         f.write(DEFAULT_LEVEL_CONTENT)
 
-    print("~~~ Successfully queued blank level. ~~~")
+    print("\n~~~ Successfully queued blank level. ~~~")
+    print("Remember to exit this program before opening Jelly is Sticky.")
 
 def open_level_directory(ld):
     """Open the Level Directory in Windows Explorer."""
@@ -147,6 +155,7 @@ def open_level_directory(ld):
 def main():
     """Main loop."""
     print("Jelly is Sticky Level Selector by treehann & GPT-4, version 1.1")
+    print("Exit this program before running Jelly is Sticky to avoid errors.")
     ld = get_ld()
     if not ld:
         print("Cannot find Jelly is Sticky level directory containing main.yaml.")
