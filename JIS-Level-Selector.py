@@ -3,7 +3,7 @@ import shutil
 import string
 
 # Constants
-EXCLUDED_FILES = ["worlds.yaml"]
+EXCLUDED_FILES = ["bonus.yaml","bonus_2.yaml","demo.yaml","main.yaml","meta.yaml","new-meta.yaml","recycle.yaml","test.yaml","worlds.yaml"]
 DEFAULT_LEVEL_CONTENT = """levels:
   - name: Default-Level
     blocks: |
@@ -40,7 +40,7 @@ def get_ld():
             else:
                 print("Located Jelly is Sticky level directory containing main.yaml. Program was run from elsewhere.")
             return path
-    user_path = input("Please input the path to the Jelly is Sticky level directory: ")
+    user_path = input("Could not auto-locate level directory. Please input path manually: ")
     if os.path.isfile(os.path.join(user_path, "main.yaml")):
         return user_path
     return None
@@ -82,9 +82,14 @@ def show_level_list(ld):
     """Display the list of levels."""
     print("\nLevels available:")
     yll = fetch_yll(ld)
+
+    # Find out the maximum width needed for the index
+    max_width = len(str(len(yll)-1))
+    
     for idx, lf in enumerate(yll):
         levelname = read_levelname_from_file(os.path.join(ld, lf))
-        print(f"{idx}. {lf:20} {levelname}")
+        print(f"{idx:{max_width}}. {lf:20} {levelname}")
+
 
 def queue_level_for_playing(ld):
     """Replace custom.yaml with user's selected level."""
@@ -113,13 +118,14 @@ def queue_level_for_playing(ld):
             f.write('')
 
     # Renaming existing custom.yaml
+    clevelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
     with open(os.path.join(ld, PFF_NAME), 'r') as f:
         previous_name = f.read()
-    if previous_name:
-        os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, previous_name))
+    if previous_name and not clevelname == "Default-level":
+        new_filename = rename_to_windows_duplicate_format(ld, previous_name)
+        os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
     else:
-        levelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
-        filename = rename_to_valid_filename(levelname) + ".yaml"
+        filename = rename_to_valid_filename(clevelname) + ".yaml"
         new_filename = rename_to_windows_duplicate_format(ld, filename)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
         
@@ -138,6 +144,7 @@ def queue_level_for_playing(ld):
 
 def queue_blank_level(ld):
     """Create a blank level in custom.yaml."""
+    
     levelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
     new_name = rename_to_windows_duplicate_format(ld, f"{rename_to_valid_filename(levelname)}.yaml")
     os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_name))
@@ -147,6 +154,12 @@ def queue_blank_level(ld):
 
     print("\n~~~ Successfully queued blank level. ~~~")
     print("Remember to exit this program before opening Jelly is Sticky.")
+    
+    # Clear the PFF, to prevent the fresh level being renamed something unintended when it is moved out of the queue
+    pff_file_path = os.path.join(ld, PFF_NAME)
+    if os.path.exists(pff_file_path):
+        open(pff_file_path, 'w').close()
+
 
 def open_level_directory(ld):
     """Open the Level Directory in Windows Explorer."""
