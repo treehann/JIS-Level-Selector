@@ -1,144 +1,180 @@
 import os
 import shutil
-import yaml
 
-def find_name_in_yaml(file_path):
-    """Finds the first instance of "name: " in the file and returns the string after that."""
-    try:
-        with open(file_path, 'r') as file:
-            for line in file:
-                if "name: " in line:
-                    return line.split("name: ")[1].strip()
-    except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
-        return None
+# Constants
+EXCLUDED_FILES = ["worlds.yaml"]
+DEFAULT_LEVEL_CONTENT = """levels:
+  - name: Default-Level
+    blocks: |
+      ######
+      #....#
+      #.R..#
+      #....#
+      #....#
+      ######
+    goals: |
+      ######
+      #....#
+      #.@..#
+      #..r.#
+      #....#
+      ######
+    deco_default: 0"""
+BACKUP_FOLDER_NAME = "JISLS-backup"
+PFF_NAME = "JISLS-previous-filename.txt"
 
-def get_working_directory():
-    """Determine and return the working directory based on the presence of main.yaml."""
-    possible_directories = [
-        os.getcwd(),
-        r"C:\Program Files (x86)\Steam\steamapps\common\Jelly Is Sticky\asset\level",
-        r"C:\Program Files\Steam\steamapps\common\Jelly Is Sticky\asset\level"
+# Function group: Filesystem Operations
+def get_ld():
+    """Locate and return the Level Directory."""
+    paths_to_check = [
+        ".",
+        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Jelly Is Sticky\\asset\\level",
+        "C:\\Program Files\\Steam\\steamapps\\common\\Jelly Is Sticky\\asset\\level"
     ]
-    
-    for directory in possible_directories:
-        if os.path.exists(os.path.join(directory, 'main.yaml')):
-            return directory
 
+    for path in paths_to_check:
+        if os.path.isfile(os.path.join(path, "main.yaml")):
+            if path == ".":
+                print("Program was run from the Jelly is Sticky levels folder containing main.yaml.")
+            else:
+                print("Located Jelly is Sticky level directory containing main.yaml. Program was run from elsewhere.")
+            return path
+    user_path = input("Please input the path to the Jelly is Sticky level directory: ")
+    if os.path.isfile(os.path.join(user_path, "main.yaml")):
+        return user_path
     return None
 
-def list_yaml_files_with_names(working_dir):
-    """List all YAML files with their associated level names."""
-    all_files = sorted([f for f in os.listdir(working_dir) if f.endswith('.yaml') and f != 'worlds.yaml'])
-   
-    yaml_files = [('custom.yaml', find_name_in_yaml(os.path.join(working_dir, 'custom.yaml')))] \
-                + [(f, find_name_in_yaml(os.path.join(working_dir, f))) for f in all_files if f != 'custom.yaml']
+def fetch_yll(ld):
+    """Return a list of level filenames excluding specified files and including custom.yaml at the beginning if it exists."""
+    files = [f for f in os.listdir(ld) if f.endswith('.yaml') and f not in EXCLUDED_FILES]
+    if 'custom.yaml' in files:
+        files.remove('custom.yaml')
+        files.insert(0, 'custom.yaml')
+    return files
 
+def read_levelname_from_file(filepath):
+    """Return the levelname from a given file."""
+    with open(filepath, 'r') as f:
+        for line in f.readlines():
+            if "name:" in line:
+                return line.split("name:")[1].strip()
+    return None
+
+def rename_to_windows_duplicate_format(file_path, proposed_name):
+    """Rename a file to a Windows-like format, such as (1), (2), etc. if conflicts occur."""
+    counter = 1
+    name, ext = os.path.splitext(proposed_name)
+    new_name = proposed_name
+    while os.path.exists(os.path.join(file_path, new_name)):
+        new_name = f"{name} ({counter}){ext}"
+        counter += 1
+    return new_name
+
+def rename_to_valid_filename(levelname):
+    """Convert a levelname to a valid filename."""
+    valid_chars = "-_() %s%s" % (string.ascii_letters, string.digits)
+    filename = ''.join(c if c in valid_chars else '-' for c in levelname)
+    return filename
+
+# Function group: User Actions
+def show_level_list(ld):
+    """Display the list of levels."""
     print("\nLevels available:")
-    print("(Note: Some included levels by the game developers aren't in a playable state)\n")
-    # Determine the width required for the index based on the number of yaml files
-    idx_width = len(str(len(yaml_files)))
+    yll = fetch_yll(ld)
+    for idx, lf in enumerate(yll):
+        levelname = read_levelname_from_file(os.path.join(ld, lf))
+        print(f"{idx}. {lf:20} {levelname}")
 
-    # Determine the width required for the file names
-    max_len = max(len(f) for f in yaml_files)
-
-    for idx, (filename, levelname) in enumerate(yaml_files, 1):
-        print(f"{idx:>{idx_width}}. {filename:{max_len}} : {levelname}")
-
-    return yaml_files
-
-def queue_level(working_dir, yaml_files):
-    """Queue a level based on user's choice."""
-    backup_dir = os.path.join(working_dir, 'JISLS-backup')
-    previous_filename_path = os.path.join(working_dir, 'JISLS-previous-filename.txt')
-
-    # Create backup folder if it doesn't exist
-    if not os.path.exists(backup_dir):
-        os.makedirs(backup_dir)
-
-    # Create the previous filename record if it doesn't exist
-    if not os.path.exists(previous_filename_path):
-        with open(previous_filename_path, 'w') as file:
-            file.write('')
-
+def queue_level_for_playing(ld):
+    """Replace custom.yaml with user's selected level."""
+    show_level_list(ld)
+    print("Note: Some levels from Jelly is Sticky’s original developers may not work.")
+    yll = fetch_yll(ld)
     while True:
-        choice = input("\nChoose a number from the list above: ")
-        if not choice.isdigit() or int(choice) < 1 or int(choice) > len(yaml_files):
-            print("The input was not valid, please try again.")
-            continue
-        
-        if choice == "1":
-            print("That level is already queued. Choose another.")
-            continue
+        try:
+            choice = int(input("Input the number of a level from the list above: "))
+            if 0 <= choice < len(yll):
+                if yll[choice] == "custom.yaml":
+                    print("That level is already queued. Please make another choice:")
+                    continue
+                break
+            else:
+                print("Invalid input.")
+        except ValueError:
+            print("Invalid input.")
 
-        selected_file = yaml_files[int(choice) - 1][0]
-        levelname_for_custom = find_name_in_yaml(os.path.join(working_dir, 'custom.yaml'))
+    # Creating backup folder and PFF
+    backup_path = os.path.join(ld, BACKUP_FOLDER_NAME)
+    if not os.path.exists(backup_path):
+        os.mkdir(backup_path)
+    if not os.path.exists(os.path.join(ld, PFF_NAME)):
+        with open(os.path.join(ld, PFF_NAME), 'w') as f:
+            f.write('')
 
-        # Renaming custom.yaml to its previous name
-        with open(previous_filename_path, 'r') as file:
-            prev_filename = file.read().strip()
-        
-        if prev_filename:
-            os.rename(os.path.join(working_dir, 'custom.yaml'), os.path.join(working_dir, prev_filename))
-        else:
-            os.rename(os.path.join(working_dir, 'custom.yaml'), os.path.join(working_dir, f"{levelname_for_custom}.yaml"))
+    # Renaming existing custom.yaml
+    with open(os.path.join(ld, PFF_NAME), 'r') as f:
+        previous_name = f.read()
+    if previous_name:
+        os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, previous_name))
+    else:
+        levelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
+        filename = rename_to_valid_filename(levelname) + ".yaml"
+        new_filename = rename_to_windows_duplicate_format(ld, filename)
+        os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
 
-        # Backup selected file
-        shutil.copy(os.path.join(working_dir, selected_file), backup_dir)
+    # Copying the new custom.yaml and updating the PFF
+    shutil.copy(os.path.join(ld, yll[choice]), backup_path)
+    with open(os.path.join(ld, PFF_NAME), 'w') as f:
+        f.write(yll[choice])
+    os.rename(os.path.join(ld, yll[choice]), os.path.join(ld, "custom.yaml"))
+    print(f"~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
 
-        # Update the previous filename record
-        with open(previous_filename_path, 'w') as file:
-            file.write(selected_file)
+def queue_blank_level(ld):
+    """Create a blank level in custom.yaml."""
+    levelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
+    new_name = rename_to_windows_duplicate_format(ld, f"{rename_to_valid_filename(levelname)}.yaml")
+    os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_name))
 
-        # Rename selected file to custom.yaml
-        os.rename(os.path.join(working_dir, selected_file), os.path.join(working_dir, 'custom.yaml'))
+    with open(os.path.join(ld, "custom.yaml"), 'w') as f:
+        f.write(DEFAULT_LEVEL_CONTENT)
 
-        print(f"\n~~~ Successfully queued {yaml_files[int(choice) - 1][1]}. ~~~")
-        return  # This will exit the function without displaying the list again
+    print("~~~ Successfully queued blank level. ~~~")
 
-def open_directory_in_explorer(working_dir):
-    """Open the directory in Windows Explorer."""
-    os.startfile(working_dir)
-
-def display_menu_and_get_choice():
-    """Display the menu options and return the user's choice."""
-    print("\nChoose an action from the following by inputting its number:")
-    print("1. Queue a level for playing")
-    print("2. Queue a blank level for editing")
-    print("3. Open level directory in Explorer")
-    print("4. Exit")
-
-    return input("\nEnter your choice: ")
+def open_level_directory(ld):
+    """Open the Level Directory in Windows Explorer."""
+    os.system(f'explorer {os.path.abspath(ld)}')
 
 def main():
-    """Main function to control the script flow."""
-    print("Jelly is Sticky Level Selector by treehann & GPT-4, version 1.0")
-
-    working_dir = get_working_directory()
-    if not working_dir:
-        print("Cannot find Jelly is Sticky level directory.")
+    """Main loop."""
+    print("Jelly is Sticky Level Selector by treehann & GPT-4, version 1.1")
+    ld = get_ld()
+    if not ld:
+        print("Cannot find Jelly is Sticky level directory containing main.yaml.")
+        input("Press any key...")
         return
 
-    if working_dir == os.getcwd():
-        print("Script was run from the Jelly is Sticky levels folder.")
-    else:
-        print("Located Jelly is Sticky level directory. Script was run from elsewhere.")
-    
     while True:
-        yaml_files = list_yaml_files_with_names(working_dir)
-        user_choice = display_menu_and_get_choice()
+        print("\n1 - Show level list")
+        print("2 - Queue level for playing")
+        print("3 - Queue blank level for new level creation")
+        print("4 - Open level directory in Windows Explorer")
+        print("5 - Exit program")
+        try:
+            choice = int(input("\nInput a number to choose from the options above: "))
+            if choice == 1:
+                show_level_list(ld)
+            elif choice == 2:
+                queue_level_for_playing(ld)
+            elif choice == 3:
+                queue_blank_level(ld)
+            elif choice == 4:
+                open_level_directory(ld)
+            elif choice == 5:
+                break
+            else:
+                print("Invalid input.")
+        except ValueError:
+            print("Invalid input.")
 
-        if user_choice == "1":
-            queue_level(working_dir, yaml_files)
-        elif user_choice == "2":
-            continue
-        elif user_choice == "3":
-            open_directory_in_explorer(working_dir)
-        elif user_choice == "4":
-            print("Exiting...")
-            break
-        else:
-            print("The input was not valid, please try again.")
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
