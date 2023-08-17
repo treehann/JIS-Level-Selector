@@ -177,7 +177,7 @@ def main():
 
     while True:
         print("\n1 - Show level list")
-        print("2 - Queue level for playing")
+        print("2 - Queue level for playing or editing")
         print("3 - Queue blank level for new level creation")
         print("4 - Open level directory in Windows Explorer")
         print("5 - Exit program")
