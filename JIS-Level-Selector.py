@@ -3,7 +3,8 @@ import shutil
 import string
 
 # Constants
-EXCLUDED_FILES = ["bonus.yaml","bonus_2.yaml","demo.yaml","main.yaml","meta.yaml","new-meta.yaml","recycle.yaml","test.yaml","worlds.yaml"]
+EXCLUDED_FILES = ["main.yaml","worlds.yaml"]
+DEV_LEVELS = ["bonus.yaml","bonus_2.yaml","demo.yaml","meta.yaml","new-meta.yaml","recycle.yaml","test.yaml"]
 DEFAULT_LEVEL_CONTENT = """levels:
   - name: Default-Level
     blocks: |
@@ -21,19 +22,19 @@ DEFAULT_LEVEL_CONTENT = """levels:
       #....#
       ######
     deco_default: 0"""
-BACKUP_FOLDER_NAME = "JISLS-backup"
+LEVEL_BACKUP_FOLDER_NAME = "JISLS-backup"
 PFF_NAME = "JISLS-previous-filename.txt"
 
 # Function group: Filesystem Operations
 def get_ld():
     """Locate and return the Level Directory."""
-    paths_to_check = [
+    paths_to_check_LD = [
         ".",
         "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Jelly Is Sticky\\asset\\level",
         "C:\\Program Files\\Steam\\steamapps\\common\\Jelly Is Sticky\\asset\\level"
     ]
 
-    for path in paths_to_check:
+    for path in paths_to_check_LD:
         if os.path.isfile(os.path.join(path, "main.yaml")):
             if path == ".":
                 print("Program was run from the Jelly is Sticky levels folder containing main.yaml.")
@@ -43,6 +44,9 @@ def get_ld():
     user_path = input("Could not auto-locate level directory. Please input path manually: ")
     if os.path.isfile(os.path.join(user_path, "main.yaml")):
         return user_path
+    return None
+
+def get_udd():
     return None
 
 def fetch_yll(ld):
@@ -110,7 +114,7 @@ def queue_level_for_playing(ld):
             print("Invalid input.")
 
     # Creating backup folder and PFF
-    backup_path = os.path.join(ld, BACKUP_FOLDER_NAME)
+    backup_path = os.path.join(ld, LEVEL_BACKUP_FOLDER_NAME)
     if not os.path.exists(backup_path):
         os.mkdir(backup_path)
     if not os.path.exists(os.path.join(ld, PFF_NAME)):
@@ -164,11 +168,18 @@ def queue_blank_level(ld):
 def open_level_directory(ld):
     """Open the Level Directory in Windows Explorer."""
     os.system(f'explorer {os.path.abspath(ld)}')
+    
+def create_shortcuts(ld):
+    return None
+
+def launch_jis():
+    return None
 
 def main():
     """Main loop."""
     print("Jelly is Sticky Level Selector by treehann & GPT-4, version 1.1")
     print("Exit this program before running Jelly is Sticky to avoid errors.")
+    
     ld = get_ld()
     if not ld:
         print("Cannot find Jelly is Sticky level directory containing main.yaml.")
@@ -176,11 +187,20 @@ def main():
         return
 
     while True:
-        print("\n1 - Show level list")
-        print("2 - Queue level for playing or editing")
-        print("3 - Queue blank level for new level creation")
-        print("4 - Open level directory in Windows Explorer")
-        print("5 - Exit program")
+        tluoI = 1
+        print("\n"+str(tluoI)+" - Show level list")
+        tluoI += 1
+        print(str(tluoI)+" - QUEUE EXISTING level for playing or editing")
+        tluoI += 1
+        print(str(tluoI)+" - QUEUE BLANK level for new level creation")
+        tluoI += 1
+        print(str(tluoI)+" - Open level directory in Windows Explorer")
+        tluoI += 1
+        print(str(tluoI)+" - Create shortcuts between current directory and level directory")
+        tluoI += 1
+        print(str(tluoI)+" - Exit program")
+        tluoI += 1
+        print(str(tluoI)+" - Exit program and Run Jelly Is Sticky")
         try:
             choice = int(input("\nInput a number to choose from the options above: "))
             if choice == 1:
@@ -192,6 +212,11 @@ def main():
             elif choice == 4:
                 open_level_directory(ld)
             elif choice == 5:
+                create_shortcuts(ld)
+            elif choice == 6:
+                launch_jis()
+                break
+            elif choice == 7:
                 break
             else:
                 print("Invalid input.")
