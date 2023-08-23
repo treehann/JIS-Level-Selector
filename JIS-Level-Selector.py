@@ -128,12 +128,27 @@ def show_level_list(ld):
     print("\nLevels available:")
     yll = fetch_yll(ld)
 
-    # Find out the maximum width needed for the index
-    max_width = len(str(len(yll)-1))
+    # Calculate dynamic column widths
+    max_width = len(str(len(yll) - 1))
+    filename_width = max(len(lf) for lf in yll)
+    levelname_width = max(len(read_levelname_from_file(os.path.join(ld, lf))) for lf in yll)
     
+    # Calculate the width needed for the first column based on the maximum index width
+    first_column_width = max(max_width, len("QUEUED"), len("DEV"))
+
     for idx, lf in enumerate(yll):
         levelname = read_levelname_from_file(os.path.join(ld, lf))
-        print(f"{idx:{max_width}}. {lf:20} {levelname}")
+        
+        # Determine the label for the fourth column
+        if idx == 0:
+            status_label = "QUEUED"
+        elif lf in DEV_LEVELS:
+            status_label = "DEV"
+        else:
+            status_label = ""
+
+        print(f"{idx:{max_width}}. {lf:{filename_width}} {levelname:{levelname_width}} {status_label}")
+
 
 
 def queue_level_for_playing(ld):
