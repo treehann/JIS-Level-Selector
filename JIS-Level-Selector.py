@@ -1,6 +1,7 @@
 import os
 import shutil
 import string
+import subprocess
 
 # Constants
 EXCLUDED_FILES = ["main.yaml","worlds.yaml"]
@@ -45,6 +46,19 @@ def get_ld():
     if os.path.isfile(os.path.join(user_path, "main.yaml")):
         return user_path
     return None
+    
+def get_gd(ld):
+    # Navigate two directories up
+    gd = os.path.join(ld, "..", "..")
+    gd = os.path.abspath(gd)  # Convert to absolute path
+    
+    # Check if the jelly.exe exists in that directory
+    if os.path.exists(os.path.join(gd, "jelly.exe")):
+        print("Found the game directory containing jelly.exe.")
+    else:
+        print("Cannot find game directory containing jelly.exe.")
+    
+    return gd
 
 def get_udd():
     return None
@@ -172,8 +186,13 @@ def open_level_directory(ld):
 def create_shortcuts(ld):
     return None
 
-def launch_jis():
-    return None
+def launch_jis(gd):
+        # If jelly.exe isn't running, launch it from the given directory (gd)
+    jelly_path = os.path.join(gd, 'jelly.exe')
+    if os.path.exists(jelly_path):
+        subprocess.Popen(jelly_path, cwd=gd)  # setting cwd ensures the game runs in its directory
+    else:
+        print(f"Cannot find {jelly_path}. Ensure it exists in the specified directory.")
 
 def main():
     """Main loop."""
@@ -185,6 +204,8 @@ def main():
         print("Cannot find Jelly is Sticky level directory containing main.yaml.")
         input("Press any key...")
         return
+    
+    gd = get_gd(ld)
 
     while True:
         tluoI = 1
@@ -214,9 +235,9 @@ def main():
             elif choice == 5:
                 create_shortcuts(ld)
             elif choice == 6:
-                launch_jis()
                 break
             elif choice == 7:
+                launch_jis(gd)
                 break
             else:
                 print("Invalid input.")
