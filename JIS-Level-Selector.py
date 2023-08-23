@@ -44,6 +44,7 @@ def get_ld():
             return path
     user_path = input("Could not auto-locate level directory. Please input path manually: ")
     if os.path.isfile(os.path.join(user_path, "main.yaml")):
+        print("Successfully input level directory path containing main.yaml.")
         return user_path
     return None
     
@@ -61,6 +62,32 @@ def get_gd(ld):
     return gd
 
 def get_udd():
+    """Locate and return the User Data Directory."""
+    
+    # Get the current logged in username
+    current_user = os.getlogin()
+
+    # Construct the default path
+    default_path = f"C:\\Users\\{current_user}\\AppData\\Roaming\\Lunarch Studios\\Jelly Is Sticky"
+
+    # Construct the full path to the config.yaml file within the default path
+    config_path = os.path.join(default_path, "config.yaml")
+
+    # Check if the config.yaml file exists at the default path
+    if os.path.exists(config_path):
+        print("Found the Jelly Is Sticky AppData folder containing config.yaml.")
+        return config_path
+
+    # If not found, prompt the user for the path
+    manual_input_path = input("Could not auto-locate Jelly Is Sticky AppData directory containing config.yaml. Please input path manually: ")
+
+    # Check if the config.yaml file exists at the user provided path
+    if os.path.exists(manual_input_path) and os.path.basename(manual_input_path) == "config.yaml":
+        print("Successfully input Appdata directory containing config.yaml.")
+        return manual_input_path
+
+    # If still not found, print a message
+    print("Could not locate Jelly Is Sticky AppData directory containing config.yaml.")
     return None
 
 def fetch_yll(ld):
@@ -206,6 +233,8 @@ def main():
         return
     
     gd = get_gd(ld)
+    
+    udd = get_udd()
 
     while True:
         tluoI = 1
