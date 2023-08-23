@@ -5,7 +5,7 @@ import subprocess
 
 # Constants
 EXCLUDED_FILES = ["main.yaml","worlds.yaml"]
-DEV_LEVELS = ["bonus.yaml","bonus_2.yaml","demo.yaml","meta.yaml","new-meta.yaml","recycle.yaml","test.yaml"]
+DEV_LEVELS = ["bonus.yaml","bonus_2.yaml","demo.yaml","meta.yaml","new_meta.yaml","recycle.yaml","test.yaml"]
 DEFAULT_LEVEL_CONTENT = """levels:
   - name: Default-Level
     blocks: |
@@ -129,12 +129,9 @@ def show_level_list(ld):
     yll = fetch_yll(ld)
 
     # Calculate dynamic column widths
-    max_width = len(str(len(yll) - 1))
+    index_width = len(str(len(yll) - 1)) 
     filename_width = max(len(lf) for lf in yll)
     levelname_width = max(len(read_levelname_from_file(os.path.join(ld, lf))) for lf in yll)
-    
-    # Calculate the width needed for the first column based on the maximum index width
-    first_column_width = max(max_width, len("QUEUED"), len("DEV"))
 
     for idx, lf in enumerate(yll):
         levelname = read_levelname_from_file(os.path.join(ld, lf))
@@ -147,14 +144,13 @@ def show_level_list(ld):
         else:
             status_label = ""
 
-        print(f"{idx:{max_width}}. {lf:{filename_width}} {levelname:{levelname_width}} {status_label}")
+        print(f"{idx:{index_width}}. {lf:{filename_width}} {levelname:{levelname_width}} {status_label}")
 
 
 
 def queue_level_for_playing(ld):
     """Replace custom.yaml with user's selected level."""
     show_level_list(ld)
-    print("Note: Levels from Jelly is Sticky’s original developers may not work.")
     yll = fetch_yll(ld)
     while True:
         try:
@@ -239,7 +235,7 @@ def launch_jis(gd):
 def main():
     """Main loop."""
     print("Jelly is Sticky Level Selector by treehann & GPT-4, version 1.1")
-    print("Exit this program before running Jelly is Sticky to avoid errors.")
+    print("Exit this program before running Jelly is Sticky to avoid errors.\n")
     
     ld = get_ld()
     if not ld:
