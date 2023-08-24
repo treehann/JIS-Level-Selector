@@ -230,13 +230,16 @@ def queue_level_for_playing(ld, udd):
         except ValueError:
             print("Invalid input.")
 
-    # Creating backup folder and PFF
+    # Create backup folder and PFF
     backup_path = os.path.join(ld, LEVEL_BACKUP_FOLDER_NAME)
     if not os.path.exists(backup_path):
         os.mkdir(backup_path)
     if not os.path.exists(os.path.join(ld, PFF_NAME)):
         with open(os.path.join(ld, PFF_NAME), 'w') as f:
             f.write('')
+    backup_path_2 = os.path.join(udd, LEVEL_BACKUP_FOLDER_NAME)
+    if not os.path.exists(backup_path_2):
+        os.mkdir(backup_path_2)
 
     # Renaming existing custom.yaml (and save_custom.yaml)
     clevelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
@@ -246,14 +249,14 @@ def queue_level_for_playing(ld, udd):
     if previous_name and not clevelname == "Default-level":
         new_filename = rename_to_windows_duplicate_format(ld, previous_name)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
-        new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
-        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_save_filename))
+        #new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
+        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, f"save_{new_filename}"))
     else:
         filename = rename_to_valid_filename(clevelname) + ".yaml"
         new_filename = rename_to_windows_duplicate_format(ld, filename)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
-        new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
-        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_save_filename))
+        #new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
+        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, f"save_{new_filename}"))
         
     # Delete custom.yaml_backup if it exists
     unneeded_backup_filename = os.path.join(ld, 'custom.yaml_backup')
@@ -262,9 +265,11 @@ def queue_level_for_playing(ld, udd):
     unneeded_backup_filename2 = os.path.join(udd, 'save_custom.yaml_backup')
     if os.path.exists(unneeded_backup_filename2):
         os.remove(unneeded_backup_filename2)
-
-    # Create the new custom.yaml (by renaming list item) and updating the PFF
+    
+    # Make a backup of the chosen level's yaml file
     shutil.copy(os.path.join(ld, yll[choice]), backup_path)
+    
+    # Create the new custom.yaml (by renaming list item) and updating the PFF.     
     with open(os.path.join(ld, PFF_NAME), 'w') as f:
         f.write(yll[choice])
     os.rename(os.path.join(ld, yll[choice]), os.path.join(ld, "custom.yaml"))
@@ -272,6 +277,10 @@ def queue_level_for_playing(ld, udd):
     # Create the new save_custom.yaml from an existing save file matching the chosen level's filename, if such a thing exists
     matching_save_filename = f"save_{yll[choice]}"
     if os.path.isfile(os.path.join(udd, matching_save_filename)):
+        # back it up
+        shutil.copy(os.path.join(udd, matching_save_filename), backup_path_2)
+        
+        # rename it to save_custom.yaml
         os.rename(os.path.join(udd, matching_save_filename), os.path.join(udd, 'save_custom.yaml'))
     else:
         # otherwise create a fresh one
