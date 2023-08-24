@@ -3,11 +3,16 @@ import shutil
 import string
 import subprocess
 
+# This file was assembled at the macro level by an AI so it's probably messy, continue with caution.
+# I was too lazy and also didn't have enough time to actually do all this myself,
+# but a lot of manual effort was put in to assemble, refactor, and debug it.       -treehann
+
 # Constants
 EXCLUDED_FILES = ["main.yaml","worlds.yaml"]
 DEV_LEVELS = ["bonus.yaml","bonus_2.yaml","demo.yaml","meta.yaml","new_meta.yaml","recycle.yaml","test.yaml"]
 DEFAULT_LEVEL_CONTENT = """levels:
   - name: Default-Level
+    music: Vestibulum.mp3
     blocks: |
       ######
       #....#
@@ -23,6 +28,10 @@ DEFAULT_LEVEL_CONTENT = """levels:
       #....#
       ######
     deco_default: 0"""
+DEFAULT_SAVE_CONTENT = """# Jelly save file
+
+solved_levels:
+"""
 LEVEL_BACKUP_FOLDER_NAME = "JISLS-backup"
 PFF_NAME = "JISLS-previous-filename.txt"
 
@@ -75,15 +84,13 @@ def get_udd():
 
     # Check if the config.yaml file exists at the default path
     if os.path.exists(config_path):
-        print("Found the Jelly Is Sticky AppData folder containing config.yaml.")
-        return config_path
+        print("Found the Jelly Is Sticky AppData directory containing config.yaml.")
+        return default_path
 
     # If not found, prompt the user for the path
-    manual_input_path = input("Could not auto-locate Jelly Is Sticky AppData directory containing config.yaml. Please input path manually: ")
-
-    # Check if the config.yaml file exists at the user provided path
-    if os.path.exists(manual_input_path) and os.path.basename(manual_input_path) == "config.yaml":
-        print("Successfully input Appdata directory containing config.yaml.")
+    manual_input_path = input("Could not auto-locate Jelly is Sticky AppData directory containing config.yaml. Please input path manually: ")
+    if os.path.isfile(os.path.join(manual_input_path, "config.yaml")):
+        print("Successfully input Jelly is Sticky AppData directory containing config.yaml.")
         return manual_input_path
 
     # If still not found, print a message
@@ -151,6 +158,32 @@ def create_shortcut(target, path, name):
 
     return True
 
+def update_worlds_file(ld, num):
+    filename = f'{ld}/worlds.yaml'  # Incorporating the directory into the filename
+
+    # 1. Read all lines from the file into a list
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+    # 2. Identify the line containing num_levels for WORLD_Custom
+    # We'll find the line after the one containing "name: WORLD_Custom"
+    for index, line in enumerate(lines):
+        if "name: WORLD_Custom" in line:
+            target_index = index + 3  # The num_levels line is 3 lines after the name line
+            break
+
+    target_line = lines[target_index]
+
+    # 3. Replace the number at the end of the target line
+    # Use regex to identify and replace the number at the end of the line
+    import re
+    updated_line = re.sub(r'(\d+)$', str(num), target_line)
+    lines[target_index] = updated_line
+
+    # 4. Write the updated lines back to the file
+    with open(filename, 'w') as file:
+        file.writelines(lines)
+
 # Function group: User Actions
 def show_level_list(ld):
     """Display the list of levels."""
@@ -177,14 +210,16 @@ def show_level_list(ld):
 
 
 
-def queue_level_for_playing(ld):
+def queue_level_for_playing(ld, udd):
     """Replace custom.yaml with user's selected level."""
     show_level_list(ld)
     yll = fetch_yll(ld)
     while True:
         try:
-            choice = int(input("Input the number of a level from the list above: "))
-            if 0 <= choice < len(yll):
+            choice = int(input("Input the number of a level from the list above to queue it, or a negative number to cancel: "))
+            if choice < 0:
+                return True
+            elif 0 <= choice < len(yll):
                 if yll[choice] == "custom.yaml":
                     print("That level is already queued. Please make another choice.")
                     continue
@@ -226,17 +261,38 @@ def queue_level_for_playing(ld):
     os.rename(os.path.join(ld, yll[choice]), os.path.join(ld, "custom.yaml"))
     print(f"\n~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
     print("Remember to exit this program before opening Jelly is Sticky.")
+        
+    # Set worlds count correctly
+    c_filename = "custom.yaml"
+    c_file_path = f"{ld}/{c_filename}"
+    with open(c_file_path, 'r') as c_file:
+        c_content = c_file.read()
+        w_count = c_content.count("name:")  
+    update_worlds_file(ld, w_count)
 
-def queue_blank_level(ld):
+def queue_blank_level(ld, udd):
     """Create a blank level in custom.yaml."""
     
+    # rename custom.yaml
     levelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
     new_name = rename_to_windows_duplicate_format(ld, f"{rename_to_valid_filename(levelname)}.yaml")
     os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_name))
 
+    # write a new custom.yaml
     with open(os.path.join(ld, "custom.yaml"), 'w') as f:
         f.write(DEFAULT_LEVEL_CONTENT)
-
+    
+    # update worlds count
+    update_worlds_file(ld, 1)
+    
+    # rename save_custom.yaml 
+    new_save_name = f"save_{new_name}"
+    os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_save_name))
+    
+    # write a new save_custom.yaml
+    with open(os.path.join(udd, "save_custom.yaml"), 'w') as f:
+        f.write(DEFAULT_SAVE_CONTENT)
+    
     print("\n~~~ Successfully queued blank level. ~~~")
     print("Remember to exit this program before opening Jelly is Sticky.")
     
@@ -321,9 +377,9 @@ def main():
             if choice == 1:
                 show_level_list(ld)
             elif choice == 2:
-                queue_level_for_playing(ld)
+                queue_level_for_playing(ld, udd)
             elif choice == 3:
-                queue_blank_level(ld)
+                queue_blank_level(ld, udd)
             elif choice == 4:
                 open_level_directory(ld)
             elif choice == 5:
