@@ -218,6 +218,7 @@ def queue_level_for_playing(ld, udd):
         try:
             choice = int(input("Input the number of a level from the list above to queue it, or a negative number to cancel: "))
             if choice < 0:
+                # break completely out
                 return True
             elif 0 <= choice < len(yll):
                 if yll[choice] == "custom.yaml":
@@ -237,28 +238,47 @@ def queue_level_for_playing(ld, udd):
         with open(os.path.join(ld, PFF_NAME), 'w') as f:
             f.write('')
 
-    # Renaming existing custom.yaml
+    # Renaming existing custom.yaml (and save_custom.yaml)
     clevelname = read_levelname_from_file(os.path.join(ld, "custom.yaml"))
+    new_filename="invalid_filename.yaml"
     with open(os.path.join(ld, PFF_NAME), 'r') as f:
         previous_name = f.read()
     if previous_name and not clevelname == "Default-level":
         new_filename = rename_to_windows_duplicate_format(ld, previous_name)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
+        new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
+        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_save_filename))
     else:
         filename = rename_to_valid_filename(clevelname) + ".yaml"
         new_filename = rename_to_windows_duplicate_format(ld, filename)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
+        new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
+        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_save_filename))
         
     # Delete custom.yaml_backup if it exists
     unneeded_backup_filename = os.path.join(ld, 'custom.yaml_backup')
     if os.path.exists(unneeded_backup_filename):
         os.remove(unneeded_backup_filename)
+    unneeded_backup_filename2 = os.path.join(udd, 'save_custom.yaml_backup')
+    if os.path.exists(unneeded_backup_filename2):
+        os.remove(unneeded_backup_filename2)
 
-    # Copying the new custom.yaml and updating the PFF
+    # Create the new custom.yaml (by renaming list item) and updating the PFF
     shutil.copy(os.path.join(ld, yll[choice]), backup_path)
     with open(os.path.join(ld, PFF_NAME), 'w') as f:
         f.write(yll[choice])
     os.rename(os.path.join(ld, yll[choice]), os.path.join(ld, "custom.yaml"))
+    
+    # Create the new save_custom.yaml from an existing save file matching the chosen level's filename, if such a thing exists
+    matching_save_filename = f"save_{yll[choice]}"
+    if os.path.isfile(os.path.join(udd, matching_save_filename)):
+        os.rename(os.path.join(udd, matching_save_filename), os.path.join(udd, 'save_custom.yaml'))
+    else:
+        # otherwise create a fresh one
+        print(f"No save data found for {read_levelname_from_file(os.path.join(ld, new_filename))}")
+        with open(os.path.join(udd, "save_custom.yaml"), 'w') as f:
+            f.write(DEFAULT_SAVE_CONTENT)
+    
     print(f"\n~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
     print("Remember to exit this program before opening Jelly is Sticky.")
         
