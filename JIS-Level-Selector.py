@@ -249,14 +249,24 @@ def queue_level_for_playing(ld, udd):
     if previous_name and not clevelname == "Default-level":
         new_filename = rename_to_windows_duplicate_format(ld, previous_name)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
-        #new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
-        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, f"save_{new_filename}"))
+        
+        # Make corresponding save name with new filename. Need to delete the old ond first if it exists.
+        new_savename = f"save_{new_filename}"
+        new_save_dest = os.path.join(udd, new_savename)
+        if os.path.exists(new_save_dest):
+            os.remove(new_save_dest)
+        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_savename))
     else:
         filename = rename_to_valid_filename(clevelname) + ".yaml"
         new_filename = rename_to_windows_duplicate_format(ld, filename)
         os.rename(os.path.join(ld, "custom.yaml"), os.path.join(ld, new_filename))
-        #new_save_filename = rename_to_windows_duplicate_format(udd, f"save_{new_filename}")
-        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, f"save_{new_filename}"))
+        
+        # Make corresponding save name with new filename. Need to delete the old ond first if it exists.
+        new_savename = f"save_{new_filename}"
+        new_save_dest = os.path.join(udd, new_savename)
+        if os.path.exists(new_save_dest):
+            os.remove(new_save_dest)
+        os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_savename))
         
     # Delete custom.yaml_backup if it exists
     unneeded_backup_filename = os.path.join(ld, 'custom.yaml_backup')
@@ -314,8 +324,11 @@ def queue_blank_level(ld, udd):
     # update worlds count
     update_worlds_file(ld, 1)
     
-    # rename save_custom.yaml 
+    # rename save_custom.yaml. Need to delete the old ond first if it exists.
     new_save_name = f"save_{new_name}"
+    new_save_dest = os.path.join(udd, new_save_name)
+    if os.path.exists(new_save_dest):
+        os.remove(new_save_dest)
     os.rename(os.path.join(udd, "save_custom.yaml"), os.path.join(udd, new_save_name))
     
     # write a new save_custom.yaml
