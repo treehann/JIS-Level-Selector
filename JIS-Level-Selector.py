@@ -36,15 +36,15 @@ def get_ld():
     ]
 
     for path in paths_to_check_LD:
-        if os.path.isfile(os.path.join(path, "main.yaml")):
+        if os.path.isfile(os.path.join(path, "worlds.yaml")):
             if path == ".":
-                print("Program was run from the Jelly is Sticky levels folder containing main.yaml.")
+                print("Program was run from the Jelly is Sticky levels folder containing worlds.yaml.")
             else:
-                print("Located Jelly is Sticky level directory containing main.yaml. Program was run from elsewhere.")
+                print("Located Jelly is Sticky level directory containing worlds.yaml. Program was run from elsewhere.")
             return path
     user_path = input("Could not auto-locate level directory. Please input path manually: ")
-    if os.path.isfile(os.path.join(user_path, "main.yaml")):
-        print("Successfully input level directory path containing main.yaml.")
+    if os.path.isfile(os.path.join(user_path, "worlds.yaml")):
+        print("Successfully input level directory path containing worlds.yaml.")
         return user_path
     return None
     
@@ -122,6 +122,35 @@ def rename_to_valid_filename(levelname):
     filename = ''.join(c if c in valid_chars else '-' for c in levelname)
     return filename
 
+def create_shortcut(target, path, name):
+    """Creates a shortcut using Windows Scripting Host."""
+
+    shortcut_path = os.path.join(path, f"{name}.lnk")
+
+    # Check if the shortcut already exists
+    if os.path.exists(shortcut_path):
+        return False
+
+    # VBScript to create the shortcut
+    vbscript = f"""
+    Set oWS = WScript.CreateObject("WScript.Shell")
+    sLinkFile = "{shortcut_path}"
+    Set oLink = oWS.CreateShortcut(sLinkFile)
+    oLink.TargetPath = "{target}"
+    oLink.Save
+    """
+
+    # Execute the VBScript
+    with open("temp_create_shortcut.vbs", "w") as f:
+        f.write(vbscript)
+
+    subprocess.run(["cscript", "temp_create_shortcut.vbs"], shell=True, check=True, capture_output=True)
+
+    # Clean up the temporary VBScript file
+    os.remove("temp_create_shortcut.vbs")
+
+    return True
+
 # Function group: User Actions
 def show_level_list(ld):
     """Display the list of levels."""
@@ -142,7 +171,7 @@ def show_level_list(ld):
         elif lf in DEV_LEVELS:
             status_label = "DEV"
         else:
-            status_label = ""
+            status_label = "USER"
 
         print(f"{idx:{index_width}}. {lf:{filename_width}} {levelname:{levelname_width}} {status_label}")
 
@@ -220,9 +249,34 @@ def queue_blank_level(ld):
 def open_level_directory(ld):
     """Open the Level Directory in Windows Explorer."""
     os.system(f'explorer {os.path.abspath(ld)}')
-    
+
 def create_shortcuts(ld):
-    return None
+    wd = os.getcwd()
+    
+    #normalize paths to make them comparable
+    normalized_wd = os.path.normpath(os.path.abspath(wd))
+    normalized_ld = os.path.normpath(os.path.abspath(ld))
+
+    if normalized_wd == normalized_ld:
+        print("The current directory from which JISLS was run is already the level directory. Canceling.")
+        return
+
+    shortcuts_created = 0
+
+    # Puts a shortcut to the LD in the WD named “level directory - Shortcut”
+    if create_shortcut(ld, wd, "level directory - Shortcut"):
+        shortcuts_created += 1
+
+    # Puts a shortcut to the WD in the LD named “JIS-Level-Selector directory - Shortcut”
+    if create_shortcut(wd, ld, "JIS-Level-Selector directory - Shortcut"):
+        shortcuts_created += 1
+
+    # Puts a shortcut to itself (the Python program) in the LD named “JIS-Level-Selector.py - Shortcut”
+    current_script_path = os.path.abspath(__file__)
+    if create_shortcut(current_script_path, ld, "JIS-Level-Selector.py - Shortcut"):
+        shortcuts_created += 1
+
+    print(f"Created {shortcuts_created} shortcuts")
 
 def launch_jis(gd):
         # If jelly.exe isn't running, launch it from the given directory (gd)
@@ -234,12 +288,12 @@ def launch_jis(gd):
 
 def main():
     """Main loop."""
-    print("Jelly is Sticky Level Selector by treehann & GPT-4, version 1.1")
+    print("Jelly is Sticky Level Selector v1.2 by treehann, aided by GPT-4")
     print("Exit this program before running Jelly is Sticky to avoid errors.\n")
     
     ld = get_ld()
     if not ld:
-        print("Cannot find Jelly is Sticky level directory containing main.yaml.")
+        print("Cannot find Jelly is Sticky level directory containing worlds.yaml.")
         input("Press any key...")
         return
     
