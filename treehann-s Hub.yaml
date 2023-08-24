@@ -1,5 +1,6 @@
 levels:
   - name: treehann's Hub
+    music: Vestibulum.mp3
     blocks: |
          ########             
          #..##..#             
@@ -134,6 +135,7 @@ levels:
       - 4
       - 5
   - name: Robot Arms Apts.
+    music: Ignis.mp3
     blocks: |
       ######           
       #################
@@ -195,6 +197,7 @@ levels:
       77777770000000070
       00000000000000070
   - name: Birdy
+    music: Fragaria.mp3
     blocks: |
       ######
       #..#.#
@@ -214,6 +217,7 @@ levels:
     deco_default: 0
   - name: No name
   - name: Laps
+    music: Vitis.mp3
     blocks: |
        ########## 
       ##.##r.##b##
@@ -250,6 +254,7 @@ levels:
        ########## 
     deco_default: 0
   - name: Boneyard
+    music: Cocos.mp3
     blocks: |
        ############
       ###.........#
