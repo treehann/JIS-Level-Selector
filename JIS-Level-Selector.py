@@ -340,13 +340,13 @@ def queue_level_for_playing(ld, udd):
         # rename it to save_custom.yaml
         os.rename(os.path.join(udd, matching_save_filename), os.path.join(udd, 'save_custom.yaml'))
         
-        print(f"\nFound and loaded the save data for this level.")
+        print(f"\nFound and loaded the save data for the following level.")
     else:
         # otherwise create a fresh one
         with open(os.path.join(udd, "save_custom.yaml"), 'w') as f:
             f.write(DEFAULT_SAVE_CONTENT)
         
-        print(f"\nNo save data found for this level. New blank save file created.")
+        print(f"\nNo save data found for the following level. New blank save file created.")
     
     print(f"~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
     print("Remember to exit this program before opening Jelly is Sticky.")
