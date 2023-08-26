@@ -65,9 +65,9 @@ def get_ld():
     for path in paths_to_check_LD:
         if os.path.isfile(os.path.join(path, "worlds.yaml")):
             if path == ".":
-                print("Program was run from the Jelly is Sticky levels folder containing worlds.yaml.")
+                print("Program was run from the level directory containing worlds.yaml.")
             else:
-                print("Found Jelly is Sticky level directory containing worlds.yaml. Program was run from elsewhere.")
+                print("Found the level directory containing worlds.yaml. Program was run from elsewhere.")
             return path
     user_path = input("Could not auto-locate level directory. Please input path manually: ")
     if os.path.isfile(os.path.join(user_path, "worlds.yaml")):
@@ -102,17 +102,17 @@ def get_udd():
 
     # Check if the config.yaml file exists at the default path
     if os.path.exists(config_path):
-        print("Found the Jelly Is Sticky AppData directory containing config.yaml.")
+        print("Found the AppData directory containing config.yaml.")
         return default_path
 
     # If not found, prompt the user for the path
-    manual_input_path = input("Could not auto-locate Jelly is Sticky AppData directory containing config.yaml. Please input path manually: ")
+    manual_input_path = input("Could not auto-locate AppData directory containing config.yaml. Please input path manually: ")
     if os.path.isfile(os.path.join(manual_input_path, "config.yaml")):
-        print("Successfully input Jelly is Sticky AppData directory containing config.yaml.")
+        print("Successfully input AppData directory containing config.yaml.")
         return manual_input_path
 
     # If still not found, print a message
-    print("Could not locate Jelly Is Sticky AppData directory containing config.yaml.")
+    print("Could not locate AppData directory containing config.yaml.")
     return None
 
 def fetch_yll(ld):
@@ -223,7 +223,7 @@ def check_exist_key_files(ld, udd):
         scy_warning = True
     
     if(not cy_warning and not scy_warning):
-        print("Found custom.yaml and save_custom.yaml in their expected directories.")
+        print("Found custom.yaml & save_custom.yaml in their expected directories (1st & 3rd above).")
     elif((cy_warning and not scy_warning) or (scy_warning and not cy_warning)): 
         print("WARNING: You may have a level file (custom.yaml) and save file (save_custom.yaml) mismatch now")
         print("because one had to be recreated and the other did not. If you are concerned about losing save data")
