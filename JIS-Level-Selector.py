@@ -4,9 +4,10 @@ import string
 import subprocess
 
 # This file was assembled at the macro level by an AI so it's probably messy, continue with caution.
-# I was too lazy and also didn't have enough time to actually do all this myself,
-# but a lot of manual effort was put in to assemble, refactor, and debug it.       -treehann
+# I was too lazy but also didn't have enough time to actually make this thing from end to end,
+# however a lot of manual effort was put in to assemble, refactor, and debug it.       -treehann
 
+# *****************************************************************************************
 # Constants
 EXCLUDED_FILES = ["main.yaml","worlds.yaml"]
 DEV_LEVELS = ["bonus.yaml","bonus_2.yaml","demo.yaml","meta.yaml","new_meta.yaml","recycle.yaml","test.yaml"]
@@ -35,7 +36,24 @@ solved_levels:
 LEVEL_BACKUP_FOLDER_NAME = "JISLS-backup"
 PFF_NAME = "JISLS-previous-filename.txt"
 
-# Function group: Filesystem Operations
+# *****************************************************************************************
+# Function group: Miscellaneous / Helper -- not including filesystem functions
+
+def print_intro():
+    print("+-------------------------------------------------------------------------+")
+    print("|    Jelly is Sticky Level Selector v1.21 by treehann, aided by GPT-4     |")
+    print("|    Exit this program before running Jelly is Sticky to avoid errors.    |")
+    print("|  Report bugs to: treehann.prod@gmail.com / discord.com/invite/yNEJvzZ   |")
+    print("+-------------------------------------------------------------------------+\n")
+
+def rename_to_valid_filename(levelname):
+    """Convert a levelname to a valid filename. (String conversions only, no I/O)"""
+    valid_chars = "-_() %s%s" % (string.ascii_letters, string.digits)
+    filename = ''.join(c if c in valid_chars else '-' for c in levelname)
+    return filename
+
+# *****************************************************************************************
+# Function group: Filesystem Operations -- anything using os, or open/write/close of files
 def get_ld():
     """Locate and return the Level Directory."""
     paths_to_check_LD = [
@@ -49,7 +67,7 @@ def get_ld():
             if path == ".":
                 print("Program was run from the Jelly is Sticky levels folder containing worlds.yaml.")
             else:
-                print("Located Jelly is Sticky level directory containing worlds.yaml. Program was run from elsewhere.")
+                print("Found Jelly is Sticky level directory containing worlds.yaml. Program was run from elsewhere.")
             return path
     user_path = input("Could not auto-locate level directory. Please input path manually: ")
     if os.path.isfile(os.path.join(user_path, "worlds.yaml")):
@@ -123,12 +141,6 @@ def rename_to_windows_duplicate_format(file_path, proposed_name):
         counter += 1
     return new_name
 
-def rename_to_valid_filename(levelname):
-    """Convert a levelname to a valid filename."""
-    valid_chars = "-_() %s%s" % (string.ascii_letters, string.digits)
-    filename = ''.join(c if c in valid_chars else '-' for c in levelname)
-    return filename
-
 def create_shortcut(target, path, name):
     """Creates a shortcut using Windows Scripting Host."""
 
@@ -159,6 +171,7 @@ def create_shortcut(target, path, name):
     return True
 
 def update_worlds_file(ld, num):
+    """Sets the second num_levels key of worlds.yaml to num"""
     filename = f'{ld}/worlds.yaml'  # Incorporating the directory into the filename
 
     # 1. Read all lines from the file into a list
@@ -184,6 +197,40 @@ def update_worlds_file(ld, num):
     with open(filename, 'w') as file:
         file.writelines(lines)
 
+def check_exist_key_files(ld, udd):
+    """ If there is not custom.yaml in the level directory or save_custom.yaml in the AppData directory, creates them"""
+    cy_warning = False
+    scy_warning = False
+    
+    cy_path = os.path.join(ld, "custom.yaml")
+    if not os.path.exists(cy_path):
+        print("WARNING: Did not find custom.yaml in level directory, which is unusual. Just queued a new blank level.")
+        with open(os.path.join(ld, "custom.yaml"), 'w') as f:
+            f.write(DEFAULT_LEVEL_CONTENT)
+        cy_warning = True
+        
+        # new level = clear worlds file and PFF (previous filename file)
+        update_worlds_file(ld, 1)
+        pff_file_path = os.path.join(ld, PFF_NAME)
+        if os.path.exists(pff_file_path):
+            open(pff_file_path, 'w').close()
+    
+    scy_path = os.path.join(udd, "save_custom.yaml")
+    if not os.path.exists(scy_path):
+        print("WARNING: Did not find save_custom.yaml in AppData directory, which is unusual. Just created a new empty one.")
+        with open(os.path.join(udd, "save_custom.yaml"), 'w') as f:
+            f.write(DEFAULT_SAVE_CONTENT)
+        scy_warning = True
+    
+    if(not cy_warning and not scy_warning):
+        print("Found custom.yaml and save_custom.yaml in their expected directories.")
+    elif((cy_warning and not scy_warning) or (scy_warning and not cy_warning)): 
+        print("WARNING: You may have a level file (custom.yaml) and save file (save_custom.yaml) mismatch now")
+        print("because one had to be recreated and the other did not. If you are concerned about losing save data")
+        print("for either the current custom level or the previously-loaded one (there is no danger to the main game),")
+        print("please consult this program's developer, the Discord, or the Steam community.")
+
+# *****************************************************************************************
 # Function group: User Actions
 def show_level_list(ld):
     """Display the list of levels."""
@@ -216,7 +263,7 @@ def queue_level_for_playing(ld, udd):
     yll = fetch_yll(ld)
     while True:
         try:
-            choice = int(input("Input the number of a level from the list above to queue it, or a negative number to cancel: "))
+            choice = int(input("\nInput the number of a level from the list above to queue it,\nor a negative number to cancel. ---> Input: "))
             if choice < 0:
                 # break completely out
                 return True
@@ -292,13 +339,16 @@ def queue_level_for_playing(ld, udd):
         
         # rename it to save_custom.yaml
         os.rename(os.path.join(udd, matching_save_filename), os.path.join(udd, 'save_custom.yaml'))
+        
+        print(f"\nFound and loaded the save data for this level.")
     else:
         # otherwise create a fresh one
-        print(f"No save data found for {read_levelname_from_file(os.path.join(ld, new_filename))}")
         with open(os.path.join(udd, "save_custom.yaml"), 'w') as f:
             f.write(DEFAULT_SAVE_CONTENT)
+        
+        print(f"\nNo save data found for this level. New blank save file created.")
     
-    print(f"\n~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
+    print(f"~~~ Successfully queued {read_levelname_from_file(os.path.join(ld, 'custom.yaml'))} ~~~")
     print("Remember to exit this program before opening Jelly is Sticky.")
         
     # Set worlds count correctly
@@ -335,7 +385,8 @@ def queue_blank_level(ld, udd):
     with open(os.path.join(udd, "save_custom.yaml"), 'w') as f:
         f.write(DEFAULT_SAVE_CONTENT)
     
-    print("\n~~~ Successfully queued blank level. ~~~")
+    print("Wrote new blank save data.")
+    print("~~~ Successfully queued blank level. ~~~")
     print("Remember to exit this program before opening Jelly is Sticky.")
     
     # Clear the PFF, to prevent the fresh level being renamed something unintended when it is moved out of the queue
@@ -357,7 +408,7 @@ def create_shortcuts(ld):
 
     if normalized_wd == normalized_ld:
         print("The current directory from which JISLS was run is already the level directory. Canceling.")
-        return
+        returnaps
 
     shortcuts_created = 0
 
@@ -374,7 +425,13 @@ def create_shortcuts(ld):
     if create_shortcut(current_script_path, ld, "JIS-Level-Selector.py - Shortcut"):
         shortcuts_created += 1
 
-    print(f"Created {shortcuts_created} shortcuts")
+    extra_note = ""
+    the_s = "s"
+    if(shortcuts_created == 0):
+        extra_note = ". All were already present."
+    if(shortcuts_created == 1):
+        the_s = ""
+    print(f"Created {shortcuts_created} shortcut{the_s}{extra_note}")
 
 def launch_jis(gd):
         # If jelly.exe isn't running, launch it from the given directory (gd)
@@ -384,11 +441,13 @@ def launch_jis(gd):
     else:
         print(f"Cannot find {jelly_path}. Ensure it exists in the specified directory.")
 
+# *****************************************************************************************
+# Function Group: Main
 def main():
     """Main loop."""
-    print("Jelly is Sticky Level Selector v1.2 by treehann, aided by GPT-4")
-    print("Exit this program before running Jelly is Sticky to avoid errors.\n")
+    print_intro()
     
+    # get important directories
     ld = get_ld()
     if not ld:
         print("Cannot find Jelly is Sticky level directory containing worlds.yaml.")
@@ -396,8 +455,10 @@ def main():
         return
     
     gd = get_gd(ld)
-    
     udd = get_udd()
+    
+    # show warning if custom.yaml or save_custom.yaml are not found in those directories, and create those files
+    check_exist_key_files(ld, udd)
 
     while True:
         tluoI = 1
@@ -413,7 +474,7 @@ def main():
         tluoI += 1
         print(str(tluoI)+" - Exit program")
         tluoI += 1
-        print(str(tluoI)+" - Exit program and Run Jelly Is Sticky")
+        print(str(tluoI)+" - Exit program and run Jelly Is Sticky")
         try:
             choice = int(input("\nInput a number to choose from the options above: "))
             if choice == 1:
