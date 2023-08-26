@@ -1271,6 +1271,7 @@ levels:
         .###########.  
     deco_default: 0
   - name: Abyss
+    music: Atrium.mp3
     blocks: |
           ...    
         .......  
@@ -1314,6 +1315,7 @@ levels:
       - 27
       - 28
   - name: Warp and Destroy
+    music: Atrium.mp3
     blocks: |
       #############
       r...........#
@@ -1332,6 +1334,7 @@ levels:
       #############
     deco_default: 0
   - name: Edges Only
+    music: Atrium.mp3
     blocks: |
       ##############
       #............#
@@ -1352,6 +1355,7 @@ levels:
       #############.
     deco_default: 0
   - name: Vertical is Lava
+    music: Atrium.mp3
     blocks: |
       ##.......00......##
       ##000000000000000.#
@@ -1372,6 +1376,7 @@ levels:
       ##.......cc......##
     deco_default: 0
   - name: Vorpal Blade
+    music: Atrium.mp3
     blocks: |
              .   
        .......00.
